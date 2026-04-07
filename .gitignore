@@ -7,8 +7,14 @@ __v0_jsx-dev-runtime.ts
 .vercel/
 next.user-config.*
 
-# Environment variables
+# Environment variables — never commit real keys
 .env*.local
+.env
+.env.*
+!.env.example
+
+# Raw API token files
+aqicn-token-id.txt
 
 # Common ignores
 node_modules
