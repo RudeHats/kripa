@@ -22,7 +22,7 @@ export function AnimatedBackground({ color, intensity = "medium" }: AnimatedBack
   const particles = useMemo(() => {
     const count = intensity === "low" ? 15 : intensity === "medium" ? 25 : 40;
     const particleData: Particle[] = [];
-    
+
     // Use seeded pseudo-random values for consistency
     for (let i = 0; i < count; i++) {
       const seed = i * 137.5; // Golden angle for distribution
@@ -42,7 +42,7 @@ export function AnimatedBackground({ color, intensity = "medium" }: AnimatedBack
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
       {/* Primary gradient orbs */}
-      <div 
+      <div
         className="absolute w-[800px] h-[800px] rounded-full animate-aurora"
         style={{
           background: `radial-gradient(circle, ${color}15 0%, transparent 70%)`,
@@ -51,7 +51,7 @@ export function AnimatedBackground({ color, intensity = "medium" }: AnimatedBack
           filter: "blur(60px)",
         }}
       />
-      <div 
+      <div
         className="absolute w-[600px] h-[600px] rounded-full animate-aurora"
         style={{
           background: `radial-gradient(circle, ${color}10 0%, transparent 70%)`,
@@ -61,7 +61,7 @@ export function AnimatedBackground({ color, intensity = "medium" }: AnimatedBack
           animationDelay: "2s",
         }}
       />
-      <div 
+      <div
         className="absolute w-[500px] h-[500px] rounded-full animate-aurora"
         style={{
           background: `radial-gradient(circle, #3b82f620 0%, transparent 70%)`,
@@ -71,7 +71,7 @@ export function AnimatedBackground({ color, intensity = "medium" }: AnimatedBack
           animationDelay: "4s",
         }}
       />
-      
+
       {/* Floating particles */}
       {particles.map((particle) => (
         <div
@@ -90,9 +90,9 @@ export function AnimatedBackground({ color, intensity = "medium" }: AnimatedBack
           }}
         />
       ))}
-      
+
       {/* Subtle grid pattern */}
-      <div 
+      <div
         className="absolute inset-0 opacity-[0.02]"
         style={{
           backgroundImage: `
@@ -102,9 +102,9 @@ export function AnimatedBackground({ color, intensity = "medium" }: AnimatedBack
           backgroundSize: "50px 50px",
         }}
       />
-      
+
       {/* Scan line effect */}
-      <div 
+      <div
         className="absolute left-0 right-0 h-[2px] animate-ml-scan"
         style={{
           background: `linear-gradient(90deg, transparent, ${color}40, transparent)`,
@@ -112,9 +112,9 @@ export function AnimatedBackground({ color, intensity = "medium" }: AnimatedBack
           filter: "blur(1px)",
         }}
       />
-      
+
       {/* Vignette effect */}
-      <div 
+      <div
         className="absolute inset-0"
         style={{
           background: "radial-gradient(ellipse at center, transparent 0%, #0a0f1e 100%)",

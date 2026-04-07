@@ -52,35 +52,35 @@ export function APIConfigPanel({ config, onConfigChange, isOpen, onClose }: APIC
   const [localConfig, setLocalConfig] = useState<APIConfig>(config);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
-  
+
   const handleSave = () => {
     onConfigChange(localConfig);
     onClose();
   };
-  
+
   const handleTest = async () => {
     setTesting(true);
     setTestResult(null);
-    
+
     // Simulate API test
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     // Mock test result - in production, this would actually test the API
     const success = localConfig.apiKey.length > 10;
     setTestResult(success ? "success" : "error");
     setTesting(false);
   };
-  
+
   if (!isOpen) return null;
-  
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
       />
-      
+
       {/* Modal */}
       <div className="relative w-full max-w-lg mx-4 glass-card rounded-2xl overflow-hidden animate-bounce-in">
         {/* Header */}
@@ -94,14 +94,14 @@ export function APIConfigPanel({ config, onConfigChange, isOpen, onClose }: APIC
               <p className="text-xs text-muted-foreground">Connect real AQI data sources</p>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-secondary transition-colors"
           >
             <X className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
-        
+
         {/* Content */}
         <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
           {/* Provider Selection */}
@@ -112,11 +112,10 @@ export function APIConfigPanel({ config, onConfigChange, isOpen, onClose }: APIC
                 <button
                   key={provider.id}
                   onClick={() => setLocalConfig({ ...localConfig, provider: provider.id })}
-                  className={`p-3 rounded-xl text-left transition-all duration-200 ${
-                    localConfig.provider === provider.id
+                  className={`p-3 rounded-xl text-left transition-all duration-200 ${localConfig.provider === provider.id
                       ? "bg-primary/20 border-2 border-primary"
                       : "glass-card hover:bg-secondary/50 border-2 border-transparent"
-                  }`}
+                    }`}
                 >
                   <div className="font-medium text-sm text-foreground">{provider.name}</div>
                   <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
@@ -126,7 +125,7 @@ export function APIConfigPanel({ config, onConfigChange, isOpen, onClose }: APIC
               ))}
             </div>
           </div>
-          
+
           {/* API Key Input */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground flex items-center gap-2">
@@ -149,7 +148,7 @@ export function APIConfigPanel({ config, onConfigChange, isOpen, onClose }: APIC
               )}
             </div>
           </div>
-          
+
           {/* Custom Base URL (for custom provider) */}
           {localConfig.provider === "custom" && (
             <div className="space-y-2">
@@ -166,7 +165,7 @@ export function APIConfigPanel({ config, onConfigChange, isOpen, onClose }: APIC
               />
             </div>
           )}
-          
+
           {/* Enable Toggle */}
           <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30">
             <div>
@@ -177,18 +176,16 @@ export function APIConfigPanel({ config, onConfigChange, isOpen, onClose }: APIC
             </div>
             <button
               onClick={() => setLocalConfig({ ...localConfig, enabled: !localConfig.enabled })}
-              className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${
-                localConfig.enabled ? "bg-primary" : "bg-secondary"
-              }`}
+              className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${localConfig.enabled ? "bg-primary" : "bg-secondary"
+                }`}
             >
               <div
-                className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
-                  localConfig.enabled ? "translate-x-7" : "translate-x-1"
-                }`}
+                className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${localConfig.enabled ? "translate-x-7" : "translate-x-1"
+                  }`}
               />
             </button>
           </div>
-          
+
           {/* Documentation Link */}
           {localConfig.provider !== "custom" && (
             <a
@@ -200,15 +197,14 @@ export function APIConfigPanel({ config, onConfigChange, isOpen, onClose }: APIC
               View API documentation
             </a>
           )}
-          
+
           {/* Test Result Message */}
           {testResult && (
             <div
-              className={`p-3 rounded-lg text-sm animate-fade-in ${
-                testResult === "success"
+              className={`p-3 rounded-lg text-sm animate-fade-in ${testResult === "success"
                   ? "bg-green-500/20 text-green-400"
                   : "bg-red-500/20 text-red-400"
-              }`}
+                }`}
             >
               {testResult === "success"
                 ? "API connection successful! Your key is valid."
@@ -216,7 +212,7 @@ export function APIConfigPanel({ config, onConfigChange, isOpen, onClose }: APIC
             </div>
           )}
         </div>
-        
+
         {/* Footer */}
         <div className="p-4 border-t border-border flex items-center gap-3">
           <button
@@ -253,7 +249,7 @@ export function useAPIConfig() {
     enabled: false,
   });
   const [isOpen, setIsOpen] = useState(false);
-  
+
   return {
     config,
     setConfig,

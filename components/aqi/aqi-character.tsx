@@ -34,7 +34,7 @@ export function AQICharacter({ aqi, isTyping = false, isProcessing = false, size
   const color = getAQIColor(aqi);
   const [bounce, setBounce] = useState(false);
   const [eyePosition, setEyePosition] = useState({ x: 0, y: 0 });
-  
+
   // Subtle eye movement
   useEffect(() => {
     const interval = setInterval(() => {
@@ -45,7 +45,7 @@ export function AQICharacter({ aqi, isTyping = false, isProcessing = false, size
     }, 2000);
     return () => clearInterval(interval);
   }, []);
-  
+
   // Occasional bounce
   useEffect(() => {
     const interval = setInterval(() => {
@@ -60,7 +60,7 @@ export function AQICharacter({ aqi, isTyping = false, isProcessing = false, size
   const getBodyParts = () => {
     // Cute leaf/cloud creature with arms and accessories
     const baseOpacity = mood === "hazardous" ? 0.6 : 1;
-    
+
     return (
       <>
         {/* Body gradient */}
@@ -71,21 +71,21 @@ export function AQICharacter({ aqi, isTyping = false, isProcessing = false, size
             <stop offset="100%" stopColor={color} stopOpacity="0.7" />
           </radialGradient>
           <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
             <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
           <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
-            <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#000" floodOpacity="0.3"/>
+            <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#000" floodOpacity="0.3" />
           </filter>
         </defs>
-        
+
         {/* Little legs */}
         <ellipse cx="35" cy="88" rx="8" ry="5" fill={color} opacity={baseOpacity * 0.9} />
         <ellipse cx="65" cy="88" rx="8" ry="5" fill={color} opacity={baseOpacity * 0.9} />
-        
+
         {/* Main body - cute blob shape */}
         <path
           d="M 50 15 
@@ -97,14 +97,14 @@ export function AQICharacter({ aqi, isTyping = false, isProcessing = false, size
           filter="url(#dropShadow)"
           opacity={baseOpacity}
         />
-        
+
         {/* Body highlight */}
         <ellipse cx="35" cy="35" rx="15" ry="10" fill="white" opacity="0.15" />
-        
+
         {/* Little arms */}
-        <ellipse 
-          cx="8" cy="55" rx="7" ry="10" 
-          fill={color} 
+        <ellipse
+          cx="8" cy="55" rx="7" ry="10"
+          fill={color}
           opacity={baseOpacity * 0.9}
           style={{
             transformOrigin: "15px 55px",
@@ -112,9 +112,9 @@ export function AQICharacter({ aqi, isTyping = false, isProcessing = false, size
             transition: "transform 0.3s ease",
           }}
         />
-        <ellipse 
-          cx="92" cy="55" rx="7" ry="10" 
-          fill={color} 
+        <ellipse
+          cx="92" cy="55" rx="7" ry="10"
+          fill={color}
           opacity={baseOpacity * 0.9}
           style={{
             transformOrigin: "85px 55px",
@@ -125,11 +125,11 @@ export function AQICharacter({ aqi, isTyping = false, isProcessing = false, size
       </>
     );
   };
-  
+
   const getFace = () => {
     const eyeX = eyePosition.x;
     const eyeY = eyePosition.y;
-    
+
     switch (mood) {
       case "ecstatic":
         return (
@@ -224,9 +224,9 @@ export function AQICharacter({ aqi, isTyping = false, isProcessing = false, size
             <path d="M 28 42 Q 35 47 42 42" stroke="#1e293b" strokeWidth="4" fill="none" strokeLinecap="round" />
             <path d="M 58 42 Q 65 47 72 42" stroke="#1e293b" strokeWidth="4" fill="none" strokeLinecap="round" />
             {/* N95 mask */}
-            <path 
-              d="M 25 52 Q 25 72 50 75 Q 75 72 75 52 L 75 58 Q 75 75 50 78 Q 25 75 25 58 Z" 
-              fill="white" 
+            <path
+              d="M 25 52 Q 25 72 50 75 Q 75 72 75 52 L 75 58 Q 75 75 50 78 Q 25 75 25 58 Z"
+              fill="white"
               opacity="0.95"
               stroke="#94a3b8"
               strokeWidth="1"
@@ -265,7 +265,7 @@ export function AQICharacter({ aqi, isTyping = false, isProcessing = false, size
         return null;
     }
   };
-  
+
   const getAnimationClass = () => {
     if (isProcessing) return "animate-pulse";
     if (isTyping) return "animate-wiggle";
@@ -278,35 +278,35 @@ export function AQICharacter({ aqi, isTyping = false, isProcessing = false, size
       default: return "";
     }
   };
-  
+
   return (
     <div className={`relative ${sizeClasses[size]} ${getAnimationClass()} transition-transform duration-300`}>
       {/* Outer glow */}
-      <div 
+      <div
         className="absolute inset-0 rounded-full animate-pulse-glow"
-        style={{ 
+        style={{
           background: `radial-gradient(circle, ${color}40 0%, transparent 70%)`,
           transform: 'scale(1.5)',
         }}
       />
-      
+
       {/* Character SVG */}
       <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-lg relative z-10">
         {getBodyParts()}
         {getFace()}
       </svg>
-      
+
       {/* Processing indicator */}
       {isProcessing && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="absolute inset-0 rounded-full border-2 border-primary/30 animate-ping" />
-          <div 
+          <div
             className="absolute inset-2 rounded-full border-t-2 border-primary animate-spin"
             style={{ animationDuration: "1s" }}
           />
         </div>
       )}
-      
+
       {/* Typing indicator bubbles */}
       {isTyping && !isProcessing && (
         <div className="absolute -right-2 -bottom-1 flex gap-0.5">
