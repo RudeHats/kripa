@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kripa — AQI Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #070b14;
+      --surface:    rgba(13, 22, 45, 0.85);
+      --border:     rgba(99, 179, 237, 0.18);
+      --text:       #e2e8f0;
+      --muted:      #64748b;
+      --cyan:       #22d3ee;
+      --blue:       #60a5fa;
+      --purple:     #a78bfa;
+      --green:      #4ade80;
+      --orange:     #fb923c;
+      --red:        #f87171;
+      --yellow:     #facc15;
+      --glow-cyan:  0 0 20px rgba(34,211,238,.45);
+      --glow-blue:  0 0 20px rgba(96,165,250,.45);
+      --glow-green: 0 0 20px rgba(74,222,128,.45);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── Canvas Particle Background ───────────────────────────────────── */
+    #particle-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ─── Layout ────────────────────────────────────────────────────────── */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    /* ─── Glass Card ────────────────────────────────────────────────────── */
+    .glass {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    /* ─── Hero ──────────────────────────────────────────────────────────── */
+    .hero {
+      text-align: center;
+      padding: 90px 24px 60px;
+      position: relative;
+    }
+
+    .hero-logo {
+      width: 90px;
+      height: 90px;
+      margin: 0 auto 28px;
+      position: relative;
+    }
+
+    /* Animated AQI gauge SVG */
+    .gauge-svg { width: 90px; height: 90px; }
+    .gauge-track { fill: none; stroke: rgba(99,179,237,0.15); stroke-width: 8; }
+    .gauge-fill {
+      fill: none;
+      stroke: url(#gaugeGrad);
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 220;
+      stroke-dashoffset: 220;
+      transform-origin: center;
+      transform: rotate(-90deg);
+      animation: gaugeLoad 2s cubic-bezier(.4,0,.2,1) 0.5s forwards;
+    }
+    @keyframes gaugeLoad {
+      to { stroke-dashoffset: 44; } /* ~80% filled */
+    }
+
+    .gauge-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      fill: var(--cyan);
+      dominant-baseline: middle;
+      text-anchor: middle;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: rgba(34,211,238,0.10);
+      border: 1px solid rgba(34,211,238,0.30);
+      color: var(--cyan);
+      margin-bottom: 20px;
+      animation: fadeDown 0.6s ease both;
+    }
+
+    .hero-badge .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--cyan);
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.6rem, 7vw, 4.2rem);
+      font-weight: 900;
+      background: linear-gradient(135deg, #fff 0%, var(--cyan) 45%, var(--blue) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      animation: fadeUp 0.7s ease 0.1s both;
+    }
+
+    .hero-sub {
+      margin-top: 16px;
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.7;
+      animation: fadeUp 0.7s ease 0.25s both;
+    }
+
+    /* ─── Badges row ────────────────────────────────────────────────────── */
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 28px;
+      animation: fadeUp 0.7s ease 0.4s both;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      cursor: default;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .badge:hover { transform: translateY(-2px); }
+
+    .badge-next { background: rgba(0,0,0,.4); border-color: rgba(255,255,255,.15); color: #fff; }
+    .badge-next:hover { box-shadow: 0 0 16px rgba(255,255,255,.15); }
+
+    .badge-ts { background: rgba(49,120,198,.15); border-color: rgba(49,120,198,.4); color: #60a5fa; }
+    .badge-ts:hover { box-shadow: var(--glow-blue); }
+
+    .badge-python { background: rgba(55,118,171,.15); border-color: rgba(55,118,171,.4); color: #93c5fd; }
+    .badge-python:hover { box-shadow: var(--glow-blue); }
+
+    .badge-groq { background: rgba(167,139,250,.12); border-color: rgba(167,139,250,.35); color: var(--purple); }
+    .badge-groq:hover { box-shadow: 0 0 16px rgba(167,139,250,.4); }
+
+    .badge-waqi { background: rgba(34,211,238,.10); border-color: rgba(34,211,238,.30); color: var(--cyan); }
+    .badge-waqi:hover { box-shadow: var(--glow-cyan); }
+
+    .badge-leaflet { background: rgba(74,222,128,.10); border-color: rgba(74,222,128,.30); color: var(--green); }
+    .badge-leaflet:hover { box-shadow: var(--glow-green); }
+
+    /* ─── Section Titles ─────────────────────────────────────────────────── */
+    .section { margin-top: 64px; }
+
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 20px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(34,211,238,.35) 0%, transparent 100%);
+    }
+
+    .section-title {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
+    }
+
+    .section-desc {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      max-width: 700px;
+    }
+
+    /* ─── Feature Grid ───────────────────────────────────────────────────── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 18px;
+      margin-top: 28px;
+    }
+
+    .feature-card {
+      padding: 24px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      position: relative;
+      overflow: hidden;
+      cursor: default;
+      transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at top left, var(--card-glow, rgba(34,211,238,.08)) 0%, transparent 65%);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .feature-card:hover { transform: translateY(-4px); border-color: rgba(99,179,237,.35); }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,.4); }
+
+    .feature-icon {
+      font-size: 28px;
+      margin-bottom: 14px;
+      display: block;
+      filter: drop-shadow(0 0 8px currentColor);
+    }
+
+    .feature-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 7px;
+    }
+
+    .feature-desc {
+      font-size: 0.875rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ─── AQI Scale Bar ──────────────────────────────────────────────────── */
+    .aqi-scale {
+      display: flex;
+      border-radius: 12px;
+      overflow: hidden;
+      height: 14px;
+      margin-top: 28px;
+      position: relative;
+    }
+
+    .aqi-seg {
+      flex: 1;
+      position: relative;
+      transition: flex 0.3s;
+    }
+    .aqi-seg:hover { flex: 1.5; }
+    .aqi-seg::after {
+      content: attr(data-label);
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: var(--muted);
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    .aqi-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 36px;
+    }
+    .aqi-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .aqi-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ─── Architecture Flow ──────────────────────────────────────────────── */
+    .arch-flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0;
+      margin-top: 32px;
+    }
+
+    .arch-node {
+      padding: 14px 22px;
+      border-radius: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      min-width: 130px;
+      transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
+    }
+    .arch-node:hover { transform: scale(1.04); }
+
+    .arch-node-label {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 4px;
+      font-weight: 400;
+    }
+
+    .arch-arrow {
+      font-size: 18px;
+      color: var(--border);
+      padding: 0 8px;
+      flex-shrink: 0;
+    }
+
+    /* ─── Setup Steps ────────────────────────────────────────────────────── */
+    .steps { counter-reset: step; margin-top: 28px; display: flex; flex-direction: column; gap: 18px; }
+
+    .step {
+      display: flex;
+      gap: 18px;
+      align-items: flex-start;
+    }
+
+    .step-num {
+      counter-increment: step;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(34,211,238,.12);
+      border: 1px solid rgba(34,211,238,.30);
+      color: var(--cyan);
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .step-body { flex: 1; }
+    .step-title { font-weight: 700; color: #fff; margin-bottom: 7px; font-size: 0.95rem; }
+
+    /* ─── Code Block ─────────────────────────────────────────────────────── */
+    .code-block {
+      background: rgba(0,0,0,0.55);
+      border: 1px solid rgba(99,179,237,.18);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      line-height: 1.7;
+      color: #a5f3fc;
+      overflow-x: auto;
+      position: relative;
+    }
+
+    .code-block .comment { color: #4b5563; }
+    .code-block .cmd { color: #86efac; }
+    .code-block .key { color: #fde68a; }
+    .code-block .val { color: #a5f3fc; }
+
+    .copy-btn {
+      position: absolute;
+      top: 10px; right: 10px;
+      background: rgba(34,211,238,.12);
+      border: 1px solid rgba(34,211,238,.25);
+      color: var(--cyan);
+      font-size: 11px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .copy-btn:hover { background: rgba(34,211,238,.22); box-shadow: var(--glow-cyan); }
+
+    /* ─── Stats Row ──────────────────────────────────────────────────────── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 16px;
+      margin-top: 28px;
+    }
+
+    .stat-card {
+      padding: 20px;
+      border-radius: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      text-align: center;
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: var(--glow-cyan); }
+
+    .stat-val {
+      font-size: 2rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+
+    .stat-label { font-size: 12px; color: var(--muted); margin-top: 6px; font-weight: 500; }
+
+    /* ─── Animations ─────────────────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: .5; transform: scale(0.85); }
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-8px); }
+    }
+    @keyframes scanline {
+      0%   { top: 0%; }
+      100% { top: 100%; }
+    }
+    @keyframes shimmer {
+      0%   { background-position: -200% center; }
+      100% { background-position:  200% center; }
+    }
+
+    /* Scroll-reveal utility */
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.65s ease, transform 0.65s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ─── Footer ─────────────────────────────────────────────────────────── */
+    footer {
+      margin-top: 80px;
+      padding: 32px 24px;
+      text-align: center;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    footer a { color: var(--cyan); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ─── Scrollbar ──────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(99,179,237,.25); border-radius: 3px; }
+
+    /* ─── Responsive ─────────────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .arch-flow { gap: 4px; }
+      .arch-node { min-width: 90px; padding: 10px 14px; font-size: 11px; }
+      .arch-arrow { font-size: 14px; padding: 0 4px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Particle canvas -->
+<canvas id="particle-canvas"></canvas>
+
+<div class="wrapper">
+
+  <!-- ─── HERO ──────────────────────────────────────────────────────────── -->
+  <section class="hero">
+
+    <!-- Animated gauge logo -->
+    <div class="hero-logo" style="animation: float 4s ease-in-out infinite;">
+      <svg class="gauge-svg" viewBox="0 0 90 90">
+        <defs>
+          <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%"   stop-color="#22d3ee"/>
+            <stop offset="60%"  stop-color="#60a5fa"/>
+            <stop offset="100%" stop-color="#a78bfa"/>
+          </linearGradient>
+        </defs>
+        <!-- Track -->
+        <circle class="gauge-track" cx="45" cy="45" r="35"/>
+        <!-- Fill -->
+        <circle class="gauge-fill"  cx="45" cy="45" r="35"/>
+        <!-- Value label -->
+        <text class="gauge-value" x="45" y="46">AQI</text>
+      </svg>
+    </div>
+
+    <div class="hero-badge">
+      <span class="dot"></span>
+      Real-time Air Quality Intelligence
+    </div>
+
+    <h1>Kripa</h1>
+
+    <p class="hero-sub">
+      A neon-styled, Next.js 16 air quality dashboard powered by WAQI live data,
+      Leaflet interactive maps, and an AeroGuard AI clinical chatbot backed by
+      Groq's Llama&nbsp;3.3&nbsp;70B. Built for health-aware users who want
+      real data, not estimates.
+    </p>
+
+    <div class="badges">
+      <span class="badge badge-next">
+        <svg width="14" height="14" viewBox="0 0 128 128"><path fill="#fff" d="M64 0C28.7 0 0 28.7 0 64s28.7 64 64 64 64-28.7 64-64S99.3 0 64 0zm32 96.2L48 32H32v64h16V48l40 48h8z"/></svg>
+        Next.js 16
+      </span>
+      <span class="badge badge-ts">
+        <svg width="14" height="14" viewBox="0 0 128 128"><path fill="#60a5fa" d="M2 63.9V127h124V.7H2v63.2zm106.3 38c-.5 4.7-3.1 8.7-7.5 11.3-4.3 2.6-9.6 3.9-15.9 3.9-6 0-11.4-1.5-16.1-4.5-3.6-2.3-6.5-5.6-8.8-10l10.8-6.8c2.3 5.7 6.3 8.6 12 8.6 2.8 0 4.9-.5 6.3-1.5 1.4-1 2.1-2.2 2.1-3.8 0-2.7-3.2-5.1-9.7-7.2-4.2-1.4-7.4-2.8-9.7-4.2-6.5-4-9.7-9.5-9.7-16.5 0-5.4 2.1-9.8 6.2-13.2 4.2-3.4 9.5-5.1 16-5.1 5 0 9.5 1.1 13.5 3.4 3.5 2 6.2 4.9 8.2 8.7l-10.6 7c-2-4-5.2-6-9.7-6-2.4 0-4.3.5-5.6 1.5-1.4 1-2 2.3-2 3.9 0 2.3 3.1 4.5 9.2 6.6 2.7.9 4.9 1.7 6.5 2.4 2.8 1.2 5.1 2.7 7.1 4.5 3.5 3.2 5.3 7.2 5.3 12.1.1.2.1.6.1.9z"/></svg>
+        TypeScript
+      </span>
+      <span class="badge badge-python">
+        <svg width="14" height="14" viewBox="0 0 128 128"><path fill="#93c5fd" d="M49.33 62h29.34C86.52 62 92 57.55 92 50.5v-26c0-6.82-5.730-11.95-13.38-13.27A92 92 0 0 0 64 10a92 92 0 0 0-14.62 1.23C42.03 12.55 36 17.68 36 24.5v26C36 57.55 41.48 62 49.33 62zM56 26a6 6 0 1 1-6 6 6 6 0 0 1 6-6zm12 0a6 6 0 1 1-6 6 6 6 0 0 1 6-6z"/><path fill="#93c5fd" d="M92 74.5v26c0 6.82-5.73 11.95-13.38 13.27A92 92 0 0 1 64 115a92 92 0 0 1-14.62-1.23C41.84 112.45 36 107.32 36 100.5v-26C36 67.45 41.48 63 49.33 63h29.34C86.52 63 92 67.45 92 74.5zM72 96a6 6 0 1 0 6-6 6 6 0 0 0-6 6zm-12 0a6 6 0 1 0 6-6 6 6 0 0 0-6 6z"/></svg>
+        Python / FastAPI
+      </span>
+      <span class="badge badge-groq">AI · Groq Llama 3.3 70B</span>
+      <span class="badge badge-waqi">WAQI Live Data</span>
+      <span class="badge badge-leaflet">🗺 Leaflet Maps</span>
+    </div>
+  </section>
+
+  <!-- ─── STATS ─────────────────────────────────────────────────────────── -->
+  <div class="stats-row reveal">
+    <div class="stat-card">
+      <div class="stat-val">6</div>
+      <div class="stat-label">AQI Categories</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">5+</div>
+      <div class="stat-label">Pollutants Tracked</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">60s</div>
+      <div class="stat-label">Auto-refresh</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">∞</div>
+      <div class="stat-label">Global Cities</div>
+    </div>
+  </div>
+
+  <!-- ─── FEATURES ─────────────────────────────────────────────────────── -->
+  <section class="section reveal">
+    <div class="section-label">What's inside</div>
+    <h2 class="section-title">Core Features</h2>
+    <p class="section-desc">Everything you need to monitor, understand, and act on air quality — built with a clinical-grade AI layer for health-sensitive users.</p>
+
+    <div class="feature-grid">
+
+      <div class="feature-card" style="--card-glow: rgba(34,211,238,.10);">
+        <span class="feature-icon" style="color:#22d3ee;">🌍</span>
+        <div class="feature-title">Interactive Live Map</div>
+        <div class="feature-desc">Click anywhere on the Leaflet map to fetch real WAQI sensor data for that precise location. Pins update instantly with AQI colour coding.</div>
+      </div>
+
+      <div class="feature-card" style="--card-glow: rgba(96,165,250,.10);">
+        <span class="feature-icon" style="color:#60a5fa;">📊</span>
+        <div class="feature-title">Real-time AQI Gauge</div>
+        <div class="feature-desc">Animated SVG gauge ring showing the current index alongside 24-hour average, daily peak, and low — refreshed every 60 seconds.</div>
+      </div>
+
+      <div class="feature-card" style="--card-glow: rgba(167,139,250,.10);">
+        <span class="feature-icon" style="color:#a78bfa;">🤖</span>
+        <div class="feature-title">AeroGuard AI Chatbot</div>
+        <div class="feature-desc">Powered by Groq's Llama 3.3 70B with function-calling tools. Provides clinical air quality assessments, predicts tomorrow's AQI, and tailors advice for asthma/COPD patients.</div>
+      </div>
+
+      <div class="feature-card" style="--card-glow: rgba(251,146,60,.10);">
+        <span class="feature-icon" style="color:#fb923c;">🏙️</span>
+        <div class="feature-title">Global City Search</div>
+        <div class="feature-desc">Search any city worldwide. Uses the WAQI search endpoint to resolve city names to exact sensor UIDs before fetching live data.</div>
+      </div>
+
+      <div class="feature-card" style="--card-glow: rgba(74,222,128,.10);">
+        <span class="feature-icon" style="color:#4ade80;">🧬</span>
+        <div class="feature-title">Health Bio-Data Context</div>
+        <div class="feature-desc">Upload medical documents (PDF/DOCX) in the Settings panel. The AI reads your health profile and overrides default severity protocols to give you personalised survival guidance.</div>
+      </div>
+
+      <div class="feature-card" style="--card-glow: rgba(250,204,21,.10);">
+        <span class="feature-icon" style="color:#facc15;">📷</span>
+        <div class="feature-title">Camera / Image Analysis</div>
+        <div class="feature-desc">Attach any image or use your live webcam feed. The AI performs a CNN-style analysis pass and delivers environment-quality metrics derived from the scene context.</div>
+      </div>
+
+      <div class="feature-card" style="--card-glow: rgba(248,113,113,.10);">
+        <span class="feature-icon" style="color:#f87171;">⚠️</span>
+        <div class="feature-title">Alert Banners</div>
+        <div class="feature-desc">Auto-surfaced alert banners when AQI crosses critical thresholds. Bell icon pulses red at AQI &gt; 150 and triggers an actionable dismissible warning.</div>
+      </div>
+
+      <div class="feature-card" style="--card-glow: rgba(34,211,238,.08);">
+        <span class="feature-icon" style="color:#67e8f9;">📈</span>
+        <div class="feature-title">24-Hour Trend &amp; Forecasts</div>
+        <div class="feature-desc">Recharts-powered area chart of the last 24 hours plus a prediction card for tomorrow. Colour tracks the current AQI severity band dynamically.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ─── AQI SCALE ─────────────────────────────────────────────────────── -->
+  <section class="section reveal">
+    <div class="section-label">Reference</div>
+    <h2 class="section-title">AQI Scale</h2>
+    <p class="section-desc">The dashboard uses the standard US EPA AQI scale. Each band has dedicated colour coding, alert logic, and clinical health guidance.</p>
+
+    <div class="aqi-scale" style="margin-top:32px; height: 18px;">
+      <div class="aqi-seg" style="background:#22c55e;"    data-label="0–50 Good"></div>
+      <div class="aqi-seg" style="background:#eab308;"    data-label="51–100 Moderate"></div>
+      <div class="aqi-seg" style="background:#f97316;"    data-label="101–150 Unhealthy*"></div>
+      <div class="aqi-seg" style="background:#ef4444;"    data-label="151–200 Unhealthy"></div>
+      <div class="aqi-seg" style="background:#a855f7;"    data-label="201–300 Very Unhealthy"></div>
+      <div class="aqi-seg" style="background:#7f1d1d;"    data-label="301+ Hazardous"></div>
+    </div>
+
+    <div class="aqi-legend" style="margin-top:44px;">
+      <div class="aqi-legend-item"><span class="aqi-dot" style="background:#22c55e;"></span>Good (0–50)</div>
+      <div class="aqi-legend-item"><span class="aqi-dot" style="background:#eab308;"></span>Moderate (51–100)</div>
+      <div class="aqi-legend-item"><span class="aqi-dot" style="background:#f97316;"></span>Unhealthy for Sensitive Groups (101–150)</div>
+      <div class="aqi-legend-item"><span class="aqi-dot" style="background:#ef4444;"></span>Unhealthy (151–200)</div>
+      <div class="aqi-legend-item"><span class="aqi-dot" style="background:#a855f7;"></span>Very Unhealthy (201–300)</div>
+      <div class="aqi-legend-item"><span class="aqi-dot" style="background:#7f1d1d;"></span>Hazardous (301+)</div>
+    </div>
+  </section>
+
+  <!-- ─── ARCHITECTURE ──────────────────────────────────────────────────── -->
+  <section class="section reveal">
+    <div class="section-label">System Design</div>
+    <h2 class="section-title">Architecture</h2>
+    <p class="section-desc">A clean two-process setup: a Next.js frontend that talks to the WAQI API directly, and a FastAPI backend that powers the AI chatbot with function-calling tools.</p>
+
+    <div class="arch-flow" style="margin-top:36px; gap: 6px;">
+      <div class="arch-node" style="border-color:rgba(34,211,238,.4); box-shadow:0 0 14px rgba(34,211,238,.12);">
+        🌐 Browser
+        <div class="arch-node-label">User Interface</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node" style="border-color:rgba(96,165,250,.4); box-shadow:0 0 14px rgba(96,165,250,.12);">
+        ▲ Next.js 16
+        <div class="arch-node-label">React + TypeScript</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node" style="border-color:rgba(167,139,250,.4); box-shadow:0 0 14px rgba(167,139,250,.12);">
+        🐍 FastAPI
+        <div class="arch-node-label">Chatbot.py · Port 8000</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node" style="border-color:rgba(251,146,60,.4); box-shadow:0 0 14px rgba(251,146,60,.12);">
+        🧠 Groq
+        <div class="arch-node-label">Llama 3.3 70B</div>
+      </div>
+    </div>
+
+    <div class="arch-flow" style="margin-top:16px; gap: 6px;">
+      <div class="arch-node" style="border-color:rgba(34,211,238,.25);" >
+        🗺 Leaflet Map
+        <div class="arch-node-label">Click → lat/lng</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node" style="border-color:rgba(34,211,238,.25);">
+        📡 WAQI API
+        <div class="arch-node-label">Live station data</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node" style="border-color:rgba(34,211,238,.25);">
+        📊 Dashboard
+        <div class="arch-node-label">Gauge + Charts</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SETUP ─────────────────────────────────────────────────────────── -->
+  <section class="section reveal">
+    <div class="section-label">Getting Started</div>
+    <h2 class="section-title">Setup Guide</h2>
+    <p class="section-desc">Up and running in under 5 minutes.</p>
+
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Clone &amp; install dependencies</div>
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre><span class="cmd">git</span> clone https://github.com/RudeHats/kripa.git
+<span class="cmd">cd</span> kripa
+<span class="cmd">npm</span> install</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Set up environment variables</div>
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre><span class="comment"># Copy the template and fill in your keys</span>
+<span class="cmd">cp</span> .env.example .env.local   <span class="comment"># for Next.js</span>
+<span class="cmd">cp</span> .env.example .env         <span class="comment"># for Python backend</span>
+
+<span class="comment"># Keys you'll need:</span>
+<span class="key">NEXT_PUBLIC_WAQI_TOKEN</span>=<span class="val">your_waqi_token</span>   <span class="comment"># https://aqicn.org/api/</span>
+<span class="key">GROQ_API_KEY</span>=<span class="val">your_groq_key</span>              <span class="comment"># https://console.groq.com/</span>
+<span class="key">WAQI_API_TOKEN</span>=<span class="val">your_waqi_token</span>
+<span class="key">HF_TOKEN</span>=<span class="val">your_huggingface_token</span>         <span class="comment"># optional</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Install Python dependencies &amp; start the AI backend</div>
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre><span class="cmd">pip</span> install fastapi uvicorn groq requests python-dotenv
+<span class="cmd">python</span> Chatbot.py</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">Start the Next.js dev server (new terminal)</div>
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre><span class="cmd">npm</span> run dev</pre>
+          </div>
+          <p style="color:#64748b; font-size:13px; margin-top:10px;">Open <a href="http://localhost:3000" style="color:#22d3ee;">http://localhost:3000</a> — the dashboard is live.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ─── TECH STACK ────────────────────────────────────────────────────── -->
+  <section class="section reveal">
+    <div class="section-label">Under the Hood</div>
+    <h2 class="section-title">Tech Stack</h2>
+
+    <div class="feature-grid" style="margin-top:24px;">
+      <div class="feature-card" style="--card-glow:rgba(96,165,250,.08);">
+        <div class="feature-title">Frontend</div>
+        <div class="feature-desc" style="margin-top:10px;">
+          Next.js 16 · React 19 · TypeScript · Tailwind CSS v4<br/>
+          Radix UI Primitives · Recharts · Leaflet / react-leaflet<br/>
+          Lucide React icons · next-themes (dark mode)<br/>
+          Vercel Analytics
+        </div>
+      </div>
+      <div class="feature-card" style="--card-glow:rgba(167,139,250,.08);">
+        <div class="feature-title">AI Backend</div>
+        <div class="feature-desc" style="margin-top:10px;">
+          Python 3.11+ · FastAPI · Uvicorn<br/>
+          Groq SDK · Llama 3.3 70B Versatile<br/>
+          Tool / function-calling pipeline<br/>
+          HuggingFace Inference API (AQI LSTM prediction)
+        </div>
+      </div>
+      <div class="feature-card" style="--card-glow:rgba(34,211,238,.08);">
+        <div class="feature-title">Data &amp; APIs</div>
+        <div class="feature-desc" style="margin-top:10px;">
+          WAQI (World Air Quality Index) · Live sensor feeds<br/>
+          Geo-based station lookup (lat/lng → UID)<br/>
+          City name search → station resolution<br/>
+          60-second auto-refresh polling
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── PROJECT STRUCTURE ─────────────────────────────────────────────── -->
+  <section class="section reveal">
+    <div class="section-label">Project</div>
+    <h2 class="section-title">Directory Structure</h2>
+
+    <div class="code-block" style="margin-top:24px; padding: 20px 24px;">
+<pre style="color:#94a3b8; line-height:2;">kripa/
+├── <span style="color:#22d3ee;">app/</span>
+│   ├── <span style="color:#86efac;">layout.tsx</span>         <span style="color:#4b5563;">← root layout, metadata, fonts</span>
+│   ├── <span style="color:#86efac;">page.tsx</span>           <span style="color:#4b5563;">← entry point</span>
+│   └── <span style="color:#86efac;">globals.css</span>        <span style="color:#4b5563;">← animation keyframes, glass-card styles</span>
+├── <span style="color:#22d3ee;">components/aqi/</span>
+│   ├── <span style="color:#86efac;">dashboard.tsx</span>      <span style="color:#4b5563;">← main grid layout, data fetching</span>
+│   ├── <span style="color:#86efac;">aqi-chatbot.tsx</span>    <span style="color:#4b5563;">← floating chat UI, camera, image upload</span>
+│   ├── <span style="color:#86efac;">aqi-gauge.tsx</span>      <span style="color:#4b5563;">← SVG animated ring gauge</span>
+│   ├── <span style="color:#86efac;">map-selector.tsx</span>   <span style="color:#4b5563;">← Leaflet map with click handler</span>
+│   ├── <span style="color:#86efac;">city-search.tsx</span>    <span style="color:#4b5563;">← global city autocomplete</span>
+│   ├── <span style="color:#86efac;">settings-modal.tsx</span> <span style="color:#4b5563;">← bio-data upload panel</span>
+│   ├── <span style="color:#86efac;">trend-chart.tsx</span>    <span style="color:#4b5563;">← 24h Recharts area chart</span>
+│   ├── <span style="color:#86efac;">prediction-card.tsx</span><span style="color:#4b5563;">← tomorrow's AQI forecast card</span>
+│   ├── <span style="color:#86efac;">animated-*.tsx</span>     <span style="color:#4b5563;">← reusable glass/glow components</span>
+│   └── <span style="color:#86efac;">alert-banner.tsx</span>   <span style="color:#4b5563;">← threshold-triggered warnings</span>
+├── <span style="color:#22d3ee;">lib/</span>
+│   ├── <span style="color:#86efac;">waqi-api.ts</span>        <span style="color:#4b5563;">← WAQI fetch helpers (geo + city search)</span>
+│   └── <span style="color:#86efac;">aqi-data.ts</span>        <span style="color:#4b5563;">← mock data, colour maps, categories</span>
+├── <span style="color:#fde68a;">Chatbot.py</span>             <span style="color:#4b5563;">← FastAPI + Groq AI backend (port 8000)</span>
+├── <span style="color:#fde68a;">.env.example</span>           <span style="color:#4b5563;">← copy → .env.local + .env and fill keys</span>
+└── <span style="color:#fde68a;">README.html</span>            <span style="color:#4b5563;">← this file</span></pre>
+    </div>
+  </section>
+
+  <!-- ─── CONTRIBUTING / LICENSE ────────────────────────────────────────── -->
+  <section class="section reveal">
+    <div class="section-label">Open Source</div>
+    <h2 class="section-title">Contributing &amp; License</h2>
+    <p class="section-desc">
+      Pull requests are welcome. For major changes, please open an issue first to discuss what you'd like to change.
+      <br/><br/>
+      Distributed under the <strong style="color:#fff;">MIT License</strong>.
+      See the repository for full terms.
+    </p>
+  </section>
+
+</div><!-- /wrapper -->
+
+<!-- ─── FOOTER ────────────────────────────────────────────────────────────── -->
+<footer>
+  <p>Built with ❤️ by <a href="https://github.com/RudeHats">RudeHats</a> &nbsp;·&nbsp; <a href="https://github.com/RudeHats/kripa">GitHub Repository</a></p>
+  <p style="margin-top:8px; font-size:11px;">Powered by WAQI · Groq · Next.js · FastAPI</p>
+</footer>
+
+<!-- ─── SCRIPTS ───────────────────────────────────────────────────────────── -->
+<script>
+/* ── Particle Canvas ─────────────────────────────────────────────────────── */
+(function () {
+  const canvas = document.getElementById('particle-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  class Particle {
+    constructor() { this.reset(); }
+    reset() {
+      this.x  = Math.random() * W;
+      this.y  = Math.random() * H;
+      this.r  = Math.random() * 2.5 + 0.6;
+      this.vx = (Math.random() - 0.5) * 0.3;
+      this.vy = (Math.random() - 0.5) * 0.3;
+      this.a  = Math.random() * 0.55 + 0.08;
+      // Colour palette matching the theme
+      const cols = ['34,211,238', '96,165,250', '167,139,250', '74,222,128'];
+      this.col = cols[Math.floor(Math.random() * cols.length)];
+    }
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      if (this.x < -5 || this.x > W + 5 || this.y < -5 || this.y > H + 5) this.reset();
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${this.col},${this.a})`;
+      // Soft glow
+      ctx.shadowBlur  = 8;
+      ctx.shadowColor = `rgba(${this.col},0.6)`;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  function init() {
+    resize();
+    particles = Array.from({ length: 110 }, () => new Particle());
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Draw connecting lines between close particles
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 90) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = `rgba(34,211,238,${0.04 * (1 - dist / 90)})`;
+          ctx.lineWidth = 0.7;
+          ctx.stroke();
+        }
+      }
+      particles[i].update();
+      particles[i].draw();
+    }
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  init();
+  draw();
+})();
+
+/* ── Scroll Reveal ───────────────────────────────────────────────────────── */
+(function () {
+  const els = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  els.forEach((el) => observer.observe(el));
+})();
+
+/* ── Copy Code Button ────────────────────────────────────────────────────── */
+function copyCode(btn) {
+  const pre = btn.nextElementSibling;
+  navigator.clipboard.writeText(pre.textContent.trim()).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1800);
+  });
+}
+</script>
+</body>
+</html>
