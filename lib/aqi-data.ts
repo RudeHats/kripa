@@ -23,6 +23,8 @@ export interface PredictionDataPoint {
 export interface AQIData {
   city: string;
   country: string;
+  lat?: number;
+  lng?: number;
   aqi: number;
   category: string;
   temperature: number;
@@ -67,7 +69,7 @@ const generateTrendData = (): TrendDataPoint[] => {
   const baseAqi = 167;
   // Use seeded values to ensure consistent data between server and client
   const variations = [15, -8, 22, -12, 5, 18, -5, 28, -15, 10, 25, -20, 8, 30, -10, 12, 20, -18, 6, 24, -8, 16, 22, -5];
-  
+
   for (let i = 0; i < 24; i++) {
     const hour = i;
     const hourStr = hour.toString().padStart(2, '0');
@@ -88,9 +90,12 @@ const generatePrediction = (): PredictionDataPoint[] => {
     138, 135, 132, 130, 128, 125, 122, 120, 118, 116,
     114, 112, 110, 108, 106, 104, 102, 100, 98, 96,
     95, 94, 92, 91, 90, 89, 88, 87, 86, 85,
-    84, 83, 82, 82, 81, 80, 80, 80
+    84, 83, 82, 82, 81, 80, 80, 80, 79, 78,
+    77, 76, 75, 75, 74, 74, 73, 73, 72, 72,
+    71, 71, 70, 70, 69, 69, 68, 68, 67, 67,
+    66, 66, 65, 65
   ];
-  
+
   return aqiValues.map((aqi, i) => ({
     hour: i,
     aqi: aqi,
@@ -100,6 +105,8 @@ const generatePrediction = (): PredictionDataPoint[] => {
 export const mockAQIData: AQIData = {
   city: "New Delhi",
   country: "India",
+  lat: 28.6139,
+  lng: 77.2090,
   aqi: 167,
   category: "Unhealthy",
   temperature: 28,
